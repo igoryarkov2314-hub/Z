@@ -1,0 +1,31 @@
+name: Free Telegram news digest
+
+on:
+  schedule:
+    # Local time with automatic daylight saving changes.
+    - cron: '0 9 * * *'
+      timezone: Europe/Helsinki
+  workflow_dispatch:
+
+concurrency:
+  group: telegram-news-daily
+  cancel-in-progress: false
+
+jobs:
+  send-news:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Collect news and send to Telegram
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+          NEWS_TIMEZONE: Europe/Helsinki
+          NEWS_MIN_SCORE: '34'
+        run: python news_agent.py
