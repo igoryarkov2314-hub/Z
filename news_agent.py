@@ -447,6 +447,16 @@ def story_blocks(story: dict, index: int, local_tz: ZoneInfo) -> list[str]:
     date = story["published"].astimezone(local_tz)
     source = html.escape(story["body_source"])
     body = story["summary"].strip()
+    # Link to the same publisher article whose text was used for the summary.
+    # Telegram HTML supports a clickable anchor with a hidden URL.
+    original_url = (story.get("source_url") or story.get("url") or "").strip()
+    source_link = (
+        f'\n\n🔗 <a href="{html.escape(original_url, quote=True)}">Открыть источник</a>'
+        if safe_url(original_url) else ""
+    )
+    # Leave headroom under Telegram's text limit for the new HTML hyperlink.
+    max_chunk_chars = max(200, min(2750, 3550 - len(source_link)
+                                   - len(title) - len(source)))
     # Only a sourced short fallback if the free AI quota is unavailable.
     mode = "🧠 ИИ-пересказ" if story.get("is_ai") else "📝 Короткая выдержка · бесплатная ИИ-квота недоступна"
     lines = [line.strip() for line in body.split("\n") if line.strip()]
@@ -454,7 +464,7 @@ def story_blocks(story: dict, index: int, local_tz: ZoneInfo) -> list[str]:
     buffer = ""
     for line in lines:
         for word in line.split():
-            if len(buffer) + len(word) + 1 > 2750:
+            if len(buffer) + len(word) + 1 > max_chunk_chars:
                 chunks.append(buffer)
                 buffer = ""
             buffer = (buffer + " " + word).strip()
@@ -469,6 +479,7 @@ def story_blocks(story: dict, index: int, local_tz: ZoneInfo) -> list[str]:
             f"<b>{index}. {title}{part}</b>\n"
             f"<i>🕒 {date:%d.%m %H:%M} · {source} · {mode}</i>\n\n"
             f"{html.escape(chunk)}"
+            + (source_link if number == len(chunks) else "")
         )
     return output
 
