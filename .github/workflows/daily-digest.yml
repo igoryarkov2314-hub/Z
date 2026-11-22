@@ -1,8 +1,7 @@
-name: Free Telegram news digest
+name: AI Telegram news digest (Cloudflare)
 
 on:
   schedule:
-    # Local time with automatic daylight saving changes.
     - cron: '0 9 * * *'
       timezone: Europe/Helsinki
   workflow_dispatch:
@@ -12,9 +11,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  send-news:
+  daily-digest:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 90
     permissions:
       contents: read
     steps:
@@ -22,10 +21,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Collect news and send to Telegram
+      - name: Install free article extraction tools
+        run: python -m pip install 'trafilatura>=2,<3' 'gnews-decoder==0.1.1'
+      - name: Collect, summarize, and send news to Telegram
         env:
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_MODEL: '@cf/meta/llama-3.2-3b-instruct'
           NEWS_TIMEZONE: Europe/Helsinki
           NEWS_MIN_SCORE: '34'
+          NEWS_MIN_BODY_CHARS: '260'
         run: python news_agent.py
