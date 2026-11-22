@@ -33,4 +33,4 @@ jobs:
           NEWS_TIMEZONE: Europe/Helsinki
           NEWS_MIN_SCORE: '34'
           NEWS_MIN_BODY_CHARS: '260'
-        run: python news_agent.py
+        run: python -u news_agent.py
